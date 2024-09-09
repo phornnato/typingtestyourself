@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing with phorN</title>
+    <link rel="icon" href="https://cdn3d.iconscout.com/3d/premium/thumb/typing-on-laptop-3d-illustration-download-in-png-blend-fbx-gltf-file-formats--device-mockup-graphic-design-pack-development-illustrations-3675951.png?f=webp">
+    <style>
+        /* style.css */
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-image: url("https://wanderingcarol.com/wp-content/uploads/2020/01/sunrise-at-angkor-wat-cambodia.jpg");
+            background-repeat: no-repeat;
+            background-size: cover;
+            height: 100vh;
+        }
+        .container{
+            color: #ffffff;
+            text-shadow: 2px 3px 15px rgb(0, 0, 0);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height:90vh;
+            overflow: hidden;
+        }
+
+        #game {
+            width: 600px;
+            height: 100%;
+            position: relative;
+            border: 4px solid #fcfffe;
+           
+        }
+
+        #hud {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border: 4px solid #fcfffe;
+        }
+
+        #word-container {
+            position: relative;
+            height: calc(100% - 40px);
+        }
+
+        .word {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 30px;
+            white-space: nowrap;
+            animation: move-down 5s linear forwards;
+        }
+
+        @keyframes move-down {
+            from {
+                top: 0;
+            }
+            to {
+                top: 100%;
+            }
+        }
+
+        input {
+            text-align: center;
+            position: absolute;
+            bottom: 20px;
+            width: 40%;
+            height: 5%;
+            font-size: 24px;
+            border: none;
+            outline: none;
+            color: #584c4c;
+            border-radius: 2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="infomation">
+       
+    </div>
+<div class="container">
+    <div id="game">
+        <div id="hud">
+            <div id="score">Score: 0</div>
+            <div id="wave">Wave: 1</div>
+            <div id="accuracy">Accuracy: 100%</div>
+        </div>
+        <div id="word-container"></div>
+    </div>
+    <input type="text" id="input" placeholder="Type here..." autofocus>
+</div>
+    <!-- Sound effects -->
+    <audio id="key-press-sound" src="menglytest.mp3" preload="auto"></audio>
+    <audio id="correct-sound" src="menglytest.mp3" preload="auto"></audio>
+    <audio id="incorrect-sound" src="menglytest.mp3" preload="auto"></audio>
+
+    <script>
+        let score = 0;
+        let accuracy = 100;
+        let wave = 1;
+        let totalTyped = 0;
+        let correctTyped = 0;
+
+        const words = [
+            // Technology
+            "computer", "keyboard", "internet", "software", "hardware", 
+            "coding", "programming", "javascript", "python", "developer", 
+
+            // Food
+            "apple", "banana", "orange", "grape", "strawberry", 
+            "pizza", "burger", "pasta", "salad", "sushi", 
+
+            // Common verbs
+            "run", "jump", "swim", "read", "write", 
+            "listen", "speak", "drive", "walk", "dance", 
+
+            // Everyday items
+            "phone", "table", "chair", "pencil", "book", 
+            "bag", "shoes", "wallet", "glasses", "watch", 
+
+            // Nature
+            "tree", "flower", "river", "mountain", "ocean", 
+            "forest", "desert", "rain", "cloud", "sunset", 
+
+            // Animals
+            "dog", "cat", "elephant", "lion", "tiger", 
+            "eagle", "shark", "dolphin", "whale", "penguin",
+
+            // Emotions
+            "happy", "sad", "angry", "excited", "nervous", 
+            "scared", "surprised", "bored", "confused", "relaxed"
+        ];
+
+        let activeWords = [];
+        let stopSoundTimeout;
+
+        function startGame() {
+            setInterval(spawnWord, 3000); // Adjust the spawn time as needed
+            setInterval(updateGame, 100);
+        }
+
+        function spawnWord() {
+            const word = words[Math.floor(Math.random() * words.length)];
+            const wordElement = document.createElement('div');
+            wordElement.className = 'word';
+            wordElement.textContent = word;
+            document.getElementById('word-container').appendChild(wordElement);
+            activeWords.push(wordElement);
+        }
+
+        function updateGame() {
+            activeWords.forEach(wordElement => {
+                if (wordElement.getBoundingClientRect().top >= window.innerHeight) {
+                    wordElement.remove();
+                    activeWords = activeWords.filter(w => w !== wordElement);
+                    score -= 10; // Penalty for missing a word
+                    updateHUD();
+                }
+            });
+        }
+
+        function updateHUD() {
+            document.getElementById('score').textContent = `Score: ${score}`;
+            document.getElementById('wave').textContent = `Wave: ${wave}`;
+            document.getElementById('accuracy').textContent = `Accuracy: ${accuracy.toFixed(1)}%`;
+        }
+
+        // Get references to the audio elements
+        const keyPressSound = document.getElementById('key-press-sound');
+        const correctSound = document.getElementById('correct-sound');
+        const incorrectSound = document.getElementById('incorrect-sound');
+
+        document.getElementById('input').addEventListener('input', function () {
+            totalTyped++;
+            const inputValue = this.value.trim();
+
+            // Play typing sound if not already playing
+            if (keyPressSound.paused) {
+                keyPressSound.play();
+                keyPressSound.loop = true; // Loop the typing sound while typing
+            }
+
+            let hasMatched = false;
+
+            activeWords.forEach(wordElement => {
+                if (wordElement.textContent.startsWith(inputValue)) {
+                    wordElement.style.color = '#00ff00'; // Highlight correct typing
+                    hasMatched = true;
+                } else {
+                    wordElement.style.color = '#FFFF00'; // Highlight incorrect typing
+                }
+
+                if (wordElement.textContent === inputValue) {
+                    correctTyped += inputValue.length;
+                    score += 10;
+                    wordElement.remove();
+                    activeWords = activeWords.filter(w => w !== wordElement);
+                    this.value = ''; 
+                    accuracy = (correctTyped / totalTyped) * 100;
+                    correctSound.play(); // Play correct sound when word is typed correctly
+                    updateHUD();
+                }
+            });
+
+            if (!hasMatched) {
+                incorrectSound.play(); // Play incorrect sound if no match
+            }
+
+            // Clear the timeout that stops the sound, as we're still typing
+            clearTimeout(stopSoundTimeout);
+
+            // Set a timeout to stop the typing sound if no typing occurs within 500ms
+            stopSoundTimeout = setTimeout(() => {
+                keyPressSound.pause();
+            }, 500);
+        });
+
+        startGame();
+    </script>
+</body>
+</html>
+   
